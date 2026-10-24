@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>案件管理ツール</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 30px 16px;
+      font-family: "Yu Gothic", "Meiryo", sans-serif;
+      background: #f3f6fc;
+      color: #263247;
+    }
+
+    .container { max-width: 850px; margin: 0 auto; }
+    header { margin-bottom: 28px; }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      color: #2457c5;
+    }
+
+    header p { margin: 0; color: #68758b; }
+    h2 { font-size: 20px; margin: 0 0 16px; }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat, .panel {
+      background: white;
+      border: 1px solid #e6ebf4;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px #2632470c;
+    }
+
+    .stat { padding: 22px 14px; }
+    .stat-label { color: #68758b; font-size: 13px; }
+
+    .stat-number {
+      margin-top: 10px;
+      font-size: 30px;
+      font-weight: bold;
+      color: #2457c5;
+    }
+
+    .panel { padding: 24px; margin-bottom: 24px; }
+
+    label {
+      display: block;
+      margin: 14px 0 7px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d5ddeb;
+      border-radius: 8px;
+      background: white;
+      color: #263247;
+      font-size: 15px;
+    }
+
+    input:focus, select:focus {
+      outline: 2px solid #b8cdfb;
+      border-color: #4778df;
+    }
+
+    button {
+      padding: 11px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #3267d5;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover { filter: brightness(0.93); }
+
+    #addProject {
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px;
+      font-size: 15px;
+    }
+
+    .hint { margin: 0 0 16px; font-size: 13px; color: #748097; }
+    #projectList { padding: 0; margin: 0; }
+
+    #projectList li {
+      list-style: none;
+      background: #fbfcff;
+      border: 1px solid #e3e9f3;
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 12px;
+    }
+
+    .project-name {
+      font-size: 17px;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+      margin-bottom: 10px;
+    }
+
+    .deadline { font-size: 13px; color: #68758b; margin-bottom: 14px; }
+    .overdue { color: #d52f45; font-weight: bold; }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status { flex: 1; min-width: 120px; }
+    .edit { background: #3267d5; }
+    .delete {
+      background: #fff0f0;
+      color: #c53040;
+      border: 1px solid #ffd3d7;
+    }
+
+    .empty { text-align: center; color: #748097; padding: 28px 12px !important; }
+
+    .editor {
+      margin-top: 16px;
+      padding: 18px;
+      background: #eef4ff;
+      border: 1px solid #cbdafa;
+      border-radius: 10px;
+    }
+
+    .editor h3 { margin: 0 0 12px; font-size: 16px; }
+    .editor-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .editor-actions button { flex: 1; }
+    .cancel { background: #64748b; }
+
+    @media (max-width: 520px) {
+      body { padding: 22px 12px; }
+      h1 { font-size: 24px; }
+      .dashboard { gap: 8px; }
+      .stat { padding: 16px 8px; }
+      .stat-label { font-size: 11px; }
+      .stat-number { font-size: 23px; }
+      .panel { padding: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>📋 案件管理ツール</h1>
+      <p>案件・納期・進捗をひと目で管理しよう。</p>
+    </header>
+
+    <section class="dashboard">
+      <div class="stat">
+        <div class="stat-label">全案件数</div>
+        <div class="stat-number" id="totalCount">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">未完了</div>
+        <div class="stat-number" id="unfinishedCount">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">完了率</div>
+        <div class="stat-number" id="completionRate">0%</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>＋ 新しい案件を登録</h2>
+
+      <label for="projectName">案件名</label>
+      <input id="projectName" type="text" placeholder="例：YouTube台本制作">
+
+      <label for="projectDeadline">納期（任意）</label>
+      <input id="projectDeadline" type="date">
+
+      <button id="addProject">案件を登録する</button>
+    </section>
+
+    <section class="panel">
+      <h2>登録した案件</h2>
+
+      <label for="filter">表示する案件</label>
+      <select id="filter">
+        <option value="all">すべて表示</option>
+        <option value="unfinished">未完了だけ表示</option>
+        <option value="完了">完了だけ表示</option>
+      </select>
+
+      <p class="hint">進捗・納期・編集内容は、このブラウザに自動保存されます。</p>
+      <ul id="projectList"></ul>
+    </section>
+  </div>
+
+  <script>
+    const projectName = document.getElementById("projectName");
+    const projectDeadline = document.getElementById("projectDeadline");
+    const addProject = document.getElementById("addProject");
+    const projectList = document.getElementById("projectList");
+    const filter = document.getElementById("filter");
+
+    let projects = JSON.parse(localStorage.getItem("myProjects") || "[]");
+    let editingIndex = null;
+
+    projects = projects.map(project => {
+      if (typeof project === "string") {
+        return { name: project, status: "未着手", deadline: "" };
+      }
+
+      return {
+        name: project.name,
+        status: project.status || "未着手",
+        deadline: project.deadline || ""
+      };
+    });
+
+    function saveProjects() {
+      localStorage.setItem("myProjects", JSON.stringify(projects));
+      displayProjects();
+    }
+
+    function displayDashboard() {
+      const total = projects.length;
+      const unfinished = projects.filter(p => p.status !== "完了").length;
+      const completed = total - unfinished;
+      const rate = total === 0 ? 0 : Math.round(completed / total * 100);
+
+      document.getElementById("totalCount").textContent = total;
+      document.getElementById("unfinishedCount").textContent = unfinished;
+      document.getElementById("completionRate").textContent = rate + "%";
+    }
+
+    function closeEditor() {
+      const editor = document.getElementById("editor");
+      if (editor) editor.remove();
+      editingIndex = null;
+    }
+
+    function openEditor(index) {
+      closeEditor();
+      editingIndex = index;
+
+      const project = projects[index];
+      const card = Array.from(projectList.children).find(
+        li => li.dataset.projectIndex === String(index)
+      );
+
+      if (!card) return;
+
+      const editor = document.createElement("div");
+      editor.className = "editor";
+      editor.id = "editor";
+
+      const heading = document.createElement("h3");
+      heading.textContent = "案件情報を編集";
+      editor.appendChild(heading);
+
+      const nameLabel = document.createElement("label");
+      nameLabel.textContent = "案件名";
+      nameLabel.htmlFor = "editName";
+      editor.appendChild(nameLabel);
+
+      const nameInput = document.createElement("input");
+      nameInput.id = "editName";
+      nameInput.type = "text";
+      nameInput.value = project.name;
+      editor.appendChild(nameInput);
+
+      const deadlineLabel = document.createElement("label");
+      deadlineLabel.textContent = "納期";
+      deadlineLabel.htmlFor = "editDeadline";
+      editor.appendChild(deadlineLabel);
+
+      const deadlineInput = document.createElement("input");
+      deadlineInput.id = "editDeadline";
+      deadlineInput.type = "date";
+      deadlineInput.value = project.deadline;
+      editor.appendChild(deadlineInput);
+
+      const statusLabel = document.createElement("label");
+      statusLabel.textContent = "進捗";
+      statusLabel.htmlFor = "editStatus";
+      editor.appendChild(statusLabel);
+
+      const statusSelect = document.createElement("select");
+      statusSelect.id = "editStatus";
+
+      ["未着手", "作業中", "完了"].forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        statusSelect.appendChild(option);
+      });
+
+      statusSelect.value = project.status;
+      editor.appendChild(statusSelect);
+
+      const actions = document.createElement("div");
+      actions.className = "editor-actions";
+
+      const saveButton = document.createElement("button");
+      saveButton.textContent = "変更を保存";
+
+      saveButton.addEventListener("click", () => {
+        const newName = nameInput.value.trim();
+
+        if (!newName) {
+          alert("案件名を入力してな！");
+          nameInput.focus();
+          return;
+        }
+
+        projects[index].name = newName;
+        projects[index].deadline = deadlineInput.value;
+        projects[index].status = statusSelect.value;
+
+        closeEditor();
+        saveProjects();
+      });
+
+      const cancelButton = document.createElement("button");
+      cancelButton.textContent = "キャンセル";
+      cancelButton.className = "cancel";
+      cancelButton.addEventListener("click", closeEditor);
+
+      actions.appendChild(saveButton);
+      actions.appendChild(cancelButton);
+      editor.appendChild(actions);
+
+      card.appendChild(editor);
+      nameInput.focus();
+    }
+
+    function displayProjects() {
+      closeEditor();
+      projectList.innerHTML = "";
+
+      projects.forEach((project, index) => {
+        if (filter.value === "unfinished" && project.status === "完了") return;
+        if (filter.value === "完了" && project.status !== "完了") return;
+
+        const li = document.createElement("li");
+        li.dataset.projectIndex = String(index);
+
+        const name = document.createElement("div");
+        name.className = "project-name";
+        name.textContent = project.name;
+        li.appendChild(name);
+
+        const deadline = document.createElement("div");
+        deadline.className = "deadline";
+
+        if (project.deadline) {
+          deadline.textContent = "📅 納期：" + project.deadline;
+
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const dueDate = new Date(project.deadline + "T00:00:00");
+
+          if (dueDate < today && project.status !== "完了") {
+            deadline.className += " overdue";
+            deadline.textContent += "（期限超過）";
+          }
+        } else {
+          deadline.textContent = "📅 納期：未設定";
+        }
+
+        li.appendChild(deadline);
+
+        const row = document.createElement("div");
+        row.className = "status-row";
+
+        const status = document.createElement("select");
+        status.className = "status";
+        status.setAttribute("aria-label", project.name + "の進捗");
+
+        ["未着手", "作業中", "完了"].forEach(value => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          status.appendChild(option);
+        });
+
+        status.value = project.status;
+        status.addEventListener("change", () => {
+          projects[index].status = status.value;
+          saveProjects();
+        });
+
+        const editButton = document.createElement("button");
+        editButton.className = "edit";
+        editButton.textContent = "編集";
+        editButton.addEventListener("click", () => openEditor(index));
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete";
+        deleteButton.textContent = "削除";
+
+        deleteButton.addEventListener("click", () => {
+          if (confirm("この案件を削除する？")) {
+            projects.splice(index, 1);
+            saveProjects();
+          }
+        });
+
+        row.appendChild(status);
+        row.appendChild(editButton);
+        row.appendChild(deleteButton);
+        li.appendChild(row);
+        projectList.appendChild(li);
+      });
+
+      if (projectList.children.length === 0) {
+        const empty = document.createElement("li");
+        empty.className = "empty";
+        empty.textContent = "該当する案件はありません。";
+        projectList.appendChild(empty);
+      }
+
+      displayDashboard();
+    }
+
+    function addNewProject() {
+      const name = projectName.value.trim();
+
+      if (!name) {
+        alert("案件名を入力してな！");
+        projectName.focus();
+        return;
+      }
+
+      projects.push({
+        name: name,
+        status: "未着手",
+        deadline: projectDeadline.value
+      });
+
+      projectName.value = "";
+      projectDeadline.value = "";
+      saveProjects();
+      projectName.focus();
+    }
+
+    addProject.addEventListener("click", addNewProject);
+    filter.addEventListener("change", displayProjects);
+
+    projectName.addEventListener("keydown", event => {
+      if (event.key === "Enter") addNewProject();
+    });
+
+    saveProjects();
+  </script>
+</body>
+</html>
