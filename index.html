@@ -96,7 +96,12 @@
       font-size: 15px;
     }
 
-    .hint { margin: 0 0 16px; font-size: 13px; color: #748097; }
+    .hint {
+      margin: 0 0 16px;
+      font-size: 13px;
+      color: #748097;
+    }
+
     #projectList { padding: 0; margin: 0; }
 
     #projectList li {
@@ -115,7 +120,12 @@
       margin-bottom: 10px;
     }
 
-    .deadline { font-size: 13px; color: #68758b; margin-bottom: 14px; }
+    .deadline {
+      font-size: 13px;
+      color: #68758b;
+      margin-bottom: 14px;
+    }
+
     .overdue { color: #d52f45; font-weight: bold; }
 
     .status-row {
@@ -127,13 +137,18 @@
 
     .status { flex: 1; min-width: 120px; }
     .edit { background: #3267d5; }
+
     .delete {
       background: #fff0f0;
       color: #c53040;
       border: 1px solid #ffd3d7;
     }
 
-    .empty { text-align: center; color: #748097; padding: 28px 12px !important; }
+    .empty {
+      text-align: center;
+      color: #748097;
+      padding: 28px 12px !important;
+    }
 
     .editor {
       margin-top: 16px;
@@ -197,6 +212,9 @@
     <section class="panel">
       <h2>登録した案件</h2>
 
+      <label for="searchProject">案件を検索</label>
+      <input id="searchProject" type="text" placeholder="案件名を入力">
+
       <label for="filter">表示する案件</label>
       <select id="filter">
         <option value="all">すべて表示</option>
@@ -215,6 +233,7 @@
     const addProject = document.getElementById("addProject");
     const projectList = document.getElementById("projectList");
     const filter = document.getElementById("filter");
+    const searchProject = document.getElementById("searchProject");
 
     let projects = JSON.parse(localStorage.getItem("myProjects") || "[]");
     let editingIndex = null;
@@ -352,9 +371,12 @@
       closeEditor();
       projectList.innerHTML = "";
 
+      const keyword = searchProject.value.trim().toLowerCase();
+
       projects.forEach((project, index) => {
         if (filter.value === "unfinished" && project.status === "完了") return;
         if (filter.value === "完了" && project.status !== "完了") return;
+        if (!project.name.toLowerCase().includes(keyword)) return;
 
         const li = document.createElement("li");
         li.dataset.projectIndex = String(index);
@@ -460,12 +482,13 @@
 
     addProject.addEventListener("click", addNewProject);
     filter.addEventListener("change", displayProjects);
+    searchProject.addEventListener("input", displayProjects);
 
     projectName.addEventListener("keydown", event => {
       if (event.key === "Enter") addNewProject();
     });
 
-    saveProjects();
+    displayProjects();
   </script>
 </body>
 </html>
